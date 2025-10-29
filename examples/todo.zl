@@ -1,0 +1,57 @@
+// todo.zl - Todo Web Application
+
+@storage(sqlite)
+@table("todos")
+struct Todo {
+    @primary
+    @autoincrement
+    int id;
+
+    @required
+    @length(max: 200)
+    string title;
+
+    @required
+    string description;
+
+    bool completed;
+}
+
+@route("/")
+Page TodoApp {
+    title: "Todo Manager";
+
+    DataList {
+        source: Todo.all();
+        columns: ["id", "title", "completed"];
+        actions: ["edit", "delete"];
+    }
+
+    Form {
+        action: "/todo/create";
+        fields: {
+            title: { type: "text", required: true, placeholder: "Enter task title" },
+            description: { type: "textarea", required: true, placeholder: "Enter description" },
+            completed: { type: "checkbox", label: "Completed" }
+        };
+        submit: "Add Todo";
+    }
+}
+
+@route("/todo/create")
+@method(POST)
+handler createTodo(Request req, Response res) {
+    Todo* todo = Todo_create(
+        req.form["title"],
+        req.form["description"],
+        req.form["completed"] == "on"
+    );
+    res.redirect("/");
+}
+
+@route("/todo/delete/:id")
+handler deleteTodo(Request req, Response res) {
+    int id = req.params["id"];
+    Todo_delete(id);
+    res.redirect("/");
+}

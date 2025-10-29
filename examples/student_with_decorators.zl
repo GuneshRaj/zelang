@@ -1,0 +1,9 @@
+// student_with_decorators.zl - Student with decorators
+
+@storage(sqlite)
+@table("students")
+struct Student {
+    int id;
+    string name;
+    string class;
+}

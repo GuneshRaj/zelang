@@ -1,0 +1,15 @@
+// student.zl - Student CRUD Example
+
+@storage(sqlite)
+@table("students")
+struct Student {
+    @primary
+    @autoincrement
+    int id;
+
+    @required
+    string name;
+
+    @required
+    string class;
+}

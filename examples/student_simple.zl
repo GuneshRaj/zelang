@@ -1,0 +1,7 @@
+// student_simple.zl - Simple Student Example
+
+struct Student {
+    int id;
+    string name;
+    string class;
+}

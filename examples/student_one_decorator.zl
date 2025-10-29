@@ -1,0 +1,8 @@
+// student_one_decorator.zl - Student with one decorator
+
+@table("students")
+struct Student {
+    int id;
+    string name;
+    string class;
+}

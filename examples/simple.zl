@@ -1,0 +1,27 @@
+// simple.zl - A simple ZeLang example
+
+@storage(sqlite)
+@table("products")
+struct Product {
+    @primary
+    @autoincrement
+    int id;
+
+    @required
+    string name;
+
+    @required
+    float price;
+
+    int quantity;
+}
+
+@table("categories")
+struct Category {
+    @primary
+    @autoincrement
+    int id;
+
+    @required
+    string name;
+}

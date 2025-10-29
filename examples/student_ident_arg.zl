@@ -1,0 +1,8 @@
+// student_ident_arg.zl - Student with identifier argument
+
+@storage(sqlite)
+struct Student {
+    int id;
+    string name;
+    string class;
+}

@@ -1,0 +1,6 @@
+// test.zl - Minimal test
+
+struct Product {
+    int id;
+    string name;
+}
