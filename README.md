@@ -335,7 +335,7 @@ handler deleteTodo(Request req, Response res) {
 
 **Screenshot:**
 
-![Todo App Screenshot](docs/todo-screenshot.png)
+![Todo App Screenshot](zelang_todo.png)
 
 **You get:**
 - ✅ SQLite database with `todos` table
