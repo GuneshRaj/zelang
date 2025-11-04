@@ -1,0 +1,136 @@
+{{/* HTTP Handler Template */}}
+// URL decode helper
+void url_decode(char *dst, const char *src) {
+    char a, b;
+    while (*src) {
+        if ((*src == '%') && ((a = src[1]) && (b = src[2])) && (isxdigit(a) && isxdigit(b))) {
+            if (a >= 'a') a -= 'a'-'A';
+            if (a >= 'A') a -= ('A' - 10);
+            else a -= '0';
+            if (b >= 'a') b -= 'a'-'A';
+            if (b >= 'A') b -= ('A' - 10);
+            else b -= '0';
+            *dst++ = 16*a+b;
+            src+=3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst++ = '\0';
+}
+
+// Parse form data
+void parse_form_data(const char* data, char fields[][256], char values[][256], int* count) {
+    char* datacopy = strdup(data);
+    char* pair = strtok(datacopy, "&");
+    *count = 0;
+
+    while (pair != NULL && *count < 10) {
+        char* eq = strchr(pair, '=');
+        if (eq) {
+            *eq = '\0';
+            url_decode(fields[*count], pair);
+            url_decode(values[*count], eq + 1);
+            (*count)++;
+        }
+        pair = strtok(NULL, "&");
+    }
+    free(datacopy);
+}
+
+// HTTP request handler
+enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
+                   const char *url, const char *method,
+                   const char *version, const char *upload_data,
+                   size_t *upload_data_size, void **con_cls) {
+
+    struct MHD_Response *response;
+    int ret;
+
+    // Handle POST for create
+    if (strcmp(url, "/{{.TableName}}/create") == 0 && strcmp(method, "POST") == 0) {
+        // First call: set up
+        if (*con_cls == NULL) {
+            *con_cls = (void*)1;
+            return MHD_YES;
+        }
+
+        // Process POST data
+        if (*upload_data_size != 0) {
+            char fields[10][256];
+            char values[10][256];
+            int count;
+            parse_form_data(upload_data, fields, values, &count);
+
+            // Extract form values
+            {{range .FormFields}}
+            {{if eq .CType "char*"}}
+            char* {{.Name}} = "";
+            {{else if .IsBool}}
+            int {{.Name}} = 0;
+            {{else}}
+            int64_t {{.Name}} = 0;
+            {{end}}
+            {{end}}
+
+            for (int i = 0; i < count; i++) {
+                {{range .FormFields}}
+                {{if eq .CType "char*"}}
+                if (strcmp(fields[i], "{{.Name}}") == 0) {{.Name}} = strdup(values[i]);
+                {{else if .IsBool}}
+                if (strcmp(fields[i], "{{.Name}}") == 0) {{.Name}} = 1;
+                {{else}}
+                if (strcmp(fields[i], "{{.Name}}") == 0) {{.Name}} = atoll(values[i]);
+                {{end}}
+                {{end}}
+            }
+
+            {{.StructName}}_create({{range $i, $f := .FormFields}}{{if $i}}, {{end}}{{$f.Name}}{{end}});
+
+            *upload_data_size = 0;
+            return MHD_YES;
+        }
+
+        // Send redirect response
+        const char* redirect = "<html><head><meta http-equiv='refresh' content='0;url=/'></head></html>";
+        response = MHD_create_response_from_buffer(strlen(redirect), (void*)redirect, MHD_RESPMEM_PERSISTENT);
+        ret = MHD_queue_response(connection, MHD_HTTP_SEE_OTHER, response);
+        MHD_add_response_header(response, "Location", "/");
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    // Handle GET for delete
+    if (strstr(url, "/{{.TableName}}/delete") != NULL && strcmp(method, "GET") == 0) {
+        const char* id_str = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "id");
+        if (id_str) {
+            int64_t id = atoll(id_str);
+            {{.StructName}}_delete(id);
+        }
+        const char* redirect = "<html><head><meta http-equiv='refresh' content='0;url=/'></head></html>";
+        response = MHD_create_response_from_buffer(strlen(redirect), (void*)redirect, MHD_RESPMEM_PERSISTENT);
+        ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    // Handle root path - show page
+    if (strcmp(url, "/") == 0 && strcmp(method, "GET") == 0) {
+        char* html = render_{{.PageNameLower}}_page();
+        response = MHD_create_response_from_buffer(strlen(html), (void*)html, MHD_RESPMEM_MUST_FREE);
+        MHD_add_response_header(response, "Content-Type", "text/html");
+        ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    // 404
+    const char* not_found = "<h1>404 Not Found</h1>";
+    response = MHD_create_response_from_buffer(strlen(not_found), (void*)not_found, MHD_RESPMEM_PERSISTENT);
+    ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
+    MHD_destroy_response(response);
+    return ret;
+}

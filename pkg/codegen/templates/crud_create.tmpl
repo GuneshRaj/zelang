@@ -1,0 +1,46 @@
+{{/* CRUD Create Function Template */}}
+{{.StructName}}* {{.StructName}}_create({{range $i, $p := .Params}}{{if $i}}, {{end}}{{$p.Type}} {{$p.Name}}{{end}}) {
+    char sql[1024];
+    sprintf(sql, "INSERT INTO {{.TableName}} ({{.FieldNames}}) VALUES ({{.Placeholders}})");
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return NULL;
+    }
+
+    // Bind parameters
+    {{range $i, $f := .BindFields}}
+    {{if eq $f.CType "int64_t"}}
+    sqlite3_bind_int64(stmt, {{add $i 1}}, {{$f.Name}});
+    {{else if eq $f.CType "double"}}
+    sqlite3_bind_double(stmt, {{add $i 1}}, {{$f.Name}});
+    {{else if eq $f.CType "char*"}}
+    sqlite3_bind_text(stmt, {{add $i 1}}, {{$f.Name}}, -1, SQLITE_TRANSIENT);
+    {{end}}
+    {{end}}
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "Failed to insert: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return NULL;
+    }
+
+    int64_t last_insert_id = sqlite3_last_insert_rowid(db);
+    sqlite3_finalize(stmt);
+
+    {{.StructName}}* obj = ({{.StructName}}*)malloc(sizeof({{.StructName}}));
+    {{range .AllFields}}
+    {{if .IsAutoIncrement}}
+    obj->{{.Name}} = last_insert_id;
+    {{else if eq .CType "char*"}}
+    obj->{{.Name}} = strdup({{.Name}});
+    {{else}}
+    obj->{{.Name}} = {{.Name}};
+    {{end}}
+    {{end}}
+
+    return obj;
+}

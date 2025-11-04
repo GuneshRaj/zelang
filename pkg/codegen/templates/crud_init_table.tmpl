@@ -1,0 +1,16 @@
+{{/* CRUD Init Table Function Template */}}
+void {{.StructName}}_init_table() {
+    char *sql = "CREATE TABLE IF NOT EXISTS {{.TableName}} ("
+        {{$fieldCount := len .Fields}}{{range $i, $f := .Fields}}"{{$f.Name}} {{$f.SQLType}}{{$f.Constraints}}{{if lt $i (add $fieldCount -1)}}, {{end}}"{{if eq $i (add $fieldCount -1)}}{{end}}
+        {{end}}")";
+
+
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+    } else {
+        printf("Table {{.TableName}} created successfully\n");
+    }
+}

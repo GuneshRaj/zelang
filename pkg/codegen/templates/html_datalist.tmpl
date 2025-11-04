@@ -1,0 +1,45 @@
+{{/* DataList Component Template */}}
+{{define "datalist"}}
+    // DataList - Show all records
+    offset += sprintf(html + offset, "<h2>All Items</h2>\n");
+    offset += sprintf(html + offset, "<table class='table table-striped'>\n");
+    offset += sprintf(html + offset, "<thead><tr>");
+
+    // Table headers
+    {{range .Fields}}
+    offset += sprintf(html + offset, "<th>{{.Title}}</th>");
+    {{end}}
+    offset += sprintf(html + offset, "<th>Actions</th>");
+    offset += sprintf(html + offset, "</tr></thead>\n");
+    offset += sprintf(html + offset, "<tbody>\n");
+
+    // Get all records
+    int count = 0;
+    {{.StructName}}** items = {{.StructName}}_all(&count);
+    for (int i = 0; i < count; i++) {
+        offset += sprintf(html + offset, "<tr>");
+
+        // Table data
+        {{range .Fields}}
+        {{if eq .CType "char*"}}
+        offset += sprintf(html + offset, "<td>%s</td>", items[i]->{{.Name}});
+        {{else if eq .CType "int"}}
+        {{if .IsBool}}
+        offset += sprintf(html + offset, "<td>%s</td>", items[i]->{{.Name}} ? "Yes" : "No");
+        {{else}}
+        offset += sprintf(html + offset, "<td>%d</td>", items[i]->{{.Name}});
+        {{end}}
+        {{else if eq .CType "int64_t"}}
+        offset += sprintf(html + offset, "<td>%lld</td>", items[i]->{{.Name}});
+        {{else if eq .CType "double"}}
+        offset += sprintf(html + offset, "<td>%f</td>", items[i]->{{.Name}});
+        {{end}}
+        {{end}}
+
+        // Delete action
+        offset += sprintf(html + offset, "<td><a href='/{{.TableName}}/delete?id=%lld' class='btn btn-sm btn-danger'>Delete</a></td>", items[i]->id);
+        offset += sprintf(html + offset, "</tr>\n");
+    }
+
+    offset += sprintf(html + offset, "</tbody></table>\n");
+{{end}}

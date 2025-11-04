@@ -1,0 +1,23 @@
+{{/* Page Rendering Function Template */}}
+char* render_{{.PageNameLower}}_page() {
+    char* html = (char*)malloc(65536);
+    int offset = 0;
+
+    // Render header
+    offset += sprintf(html + offset, html_header, "{{.PageTitle}}");
+
+    // Page title
+    offset += sprintf(html + offset, "<h1 class='mb-4'>{{.PageTitle}}</h1>\n");
+
+    {{if .HasDataList}}
+    {{template "datalist" .}}
+    {{end}}
+
+    {{if .HasForm}}
+    {{template "form" .}}
+    {{end}}
+
+    // Render footer
+    offset += sprintf(html + offset, "%s", html_footer);
+    return html;
+}

@@ -1,0 +1,37 @@
+{{/* Web Main Function Template */}}
+int main(int argc, char *argv[]) {
+    // Initialize database
+    int rc = sqlite3_open("app.db", &db);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+        return 1;
+    }
+    printf("Database opened successfully\n");
+
+    {{range .Structs}}
+    {{.Name}}_init_table();
+    {{end}}
+
+    // Start HTTP server
+    http_daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY, 8080, NULL, NULL,
+                                    &handle_request, NULL, MHD_OPTION_END);
+    if (http_daemon == NULL) {
+        fprintf(stderr, "Failed to start HTTP server\n");
+        return 1;
+    }
+
+    printf("\n========================================\n");
+    printf("Server running on http://localhost:8080\n");
+    printf("Press ENTER to stop the server...\n");
+    printf("========================================\n\n");
+
+    getchar();
+
+    // Stop HTTP server
+    MHD_stop_daemon(http_daemon);
+
+    // Close database
+    sqlite3_close(db);
+    printf("Server stopped\n");
+    return 0;
+}

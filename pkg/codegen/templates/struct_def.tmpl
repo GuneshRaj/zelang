@@ -1,0 +1,12 @@
+{{/* Struct Definition Template */}}
+// Struct: {{.StructName}}
+typedef struct {{.StructName}} {
+    {{range .Fields}}
+    {{if .IsArray}}
+    {{.CType}}* {{.Name}};
+    int {{.Name}}_count;
+    {{else}}
+    {{.CType}} {{.Name}};
+    {{end}}
+    {{end}}
+} {{.StructName}};

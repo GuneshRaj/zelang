@@ -1,0 +1,37 @@
+{{/* CRUD Find Function Template */}}
+{{.StructName}}* {{.StructName}}_find(int64_t id) {
+    char *sql = "SELECT * FROM {{.TableName}} WHERE id = ?";
+    sqlite3_stmt *stmt;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return NULL;
+    }
+
+    sqlite3_bind_int64(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_ROW) {
+        sqlite3_finalize(stmt);
+        return NULL;
+    }
+
+    {{.StructName}}* obj = ({{.StructName}}*)malloc(sizeof({{.StructName}}));
+
+    // Read columns
+    {{range $i, $f := .Fields}}
+    {{if eq $f.CType "int64_t"}}
+    obj->{{$f.Name}} = sqlite3_column_int64(stmt, {{$i}});
+    {{else if eq $f.CType "double"}}
+    obj->{{$f.Name}} = sqlite3_column_double(stmt, {{$i}});
+    {{else if eq $f.CType "char*"}}
+    obj->{{$f.Name}} = strdup((const char*)sqlite3_column_text(stmt, {{$i}}));
+    {{else if eq $f.CType "int"}}
+    obj->{{$f.Name}} = sqlite3_column_int(stmt, {{$i}});
+    {{end}}
+    {{end}}
+
+    sqlite3_finalize(stmt);
+    return obj;
+}

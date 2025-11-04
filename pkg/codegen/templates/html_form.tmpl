@@ -1,0 +1,26 @@
+{{/* Form Component Template */}}
+{{define "form"}}
+    // Form - Add new record
+    offset += sprintf(html + offset, "<h2 class='mt-5'>Add New Item</h2>\n");
+    offset += sprintf(html + offset, "<form method='POST' action='/{{.TableName}}/create'>\n");
+
+    {{range .FormFields}}
+    offset += sprintf(html + offset, "<div class='mb-3'>\n");
+    offset += sprintf(html + offset, "<label class='form-label'>{{.Label}}</label>\n");
+
+    {{if eq .InputType "textarea"}}
+    offset += sprintf(html + offset, "<textarea name='{{.Name}}' class='form-control' rows='3'{{if .Required}} required{{end}}></textarea>\n");
+    {{else if eq .InputType "checkbox"}}
+    offset += sprintf(html + offset, "<input type='checkbox' name='{{.Name}}' class='form-check-input'>\n");
+    {{else if eq .InputType "number"}}
+    offset += sprintf(html + offset, "<input type='number' name='{{.Name}}' class='form-control'{{if .Required}} required{{end}}>\n");
+    {{else}}
+    offset += sprintf(html + offset, "<input type='text' name='{{.Name}}' class='form-control'{{if .Required}} required{{end}}>\n");
+    {{end}}
+
+    offset += sprintf(html + offset, "</div>\n");
+    {{end}}
+
+    offset += sprintf(html + offset, "<button type='submit' class='btn btn-primary'>Add Item</button>\n");
+    offset += sprintf(html + offset, "</form>\n");
+{{end}}
